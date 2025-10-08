@@ -1,0 +1,3143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NARAPS DME Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Login Section -->
+        <div id="loginSection" class="bg-white rounded-xl shadow-lg p-8 mb-8 max-w-md mx-auto">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Login to DME Manager</h2>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                    <input type="text" id="username" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Enter your username">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <div class="relative">
+                        <input type="password" id="password" required class="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Enter your password">
+                        <button type="button" onclick="togglePasswordVisibility('password', 'togglePasswordIcon')" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                            <svg id="togglePasswordIcon" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                    Login
+                </button>
+            </form>
+            <div class="mt-4 text-center">
+                <button onclick="showRegisterForm()" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                    Create New Account
+                </button>
+            </div>
+            <div class="mt-2 text-center text-sm text-gray-600">
+                <p class="text-blue-600 font-medium">🔄 CLOUD SYNC: Data automatically syncs across all devices</p>
+                <p class="mt-1 text-xs">Firebase cloud storage with local browser fallback</p>
+                <p class="mt-1 text-xs text-indigo-600 font-medium">Your data is accessible from any browser when logged in</p>
+            </div>
+            
+            <!-- Export/Import Section -->
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <h3 class="text-sm font-medium text-gray-700 mb-2 text-center">Legacy Data Transfer (NARAPS Only)</h3>
+                <div class="flex gap-2">
+                    <button onclick="exportNARAPSData()" class="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-xs hover:bg-blue-600 transition-colors">
+                        Export NARAPS Data
+                    </button>
+                    <button onclick="importNARAPSData()" class="flex-1 bg-green-500 text-white px-3 py-2 rounded text-xs hover:bg-green-600 transition-colors">
+                        Import NARAPS Data
+                    </button>
+                </div>
+                <input type="file" id="importFile" accept=".json" class="hidden">
+            </div>
+        </div>
+
+        <!-- Registration Section -->
+        <div id="registerSection" class="bg-white rounded-xl shadow-lg p-8 mb-8 max-w-md mx-auto hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Create New Account</h2>
+            <form id="registerForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                    <input type="text" id="registerUsername" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Choose a username">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="registerPassword" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Choose a password" minlength="4">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                    <input type="password" id="confirmPassword" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Confirm your password" minlength="4">
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                    Create Account
+                </button>
+            </form>
+            <div class="mt-4 text-center">
+                <button onclick="showLoginForm()" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                    Back to Login
+                </button>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div id="mainApp" class="hidden">
+        <div class="text-center mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex-1"></div>
+                <h1 class="text-4xl font-bold text-indigo-800 flex-1">NARAPS DME MANANGER</h1>
+                <div class="flex-1 text-right">
+                    <div class="inline-flex items-center gap-3">
+                        <span class="text-sm text-gray-600">Welcome, <span id="currentUser" class="font-semibold"></span></span>
+                        <button onclick="logout()" class="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600 transition-colors">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <p class="text-gray-600">Manage client information and generate eligibility reports</p>
+            <div id="storageStatus" class="mt-3 inline-flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span id="storageStatusText">Data automatically saved - checking storage...</span>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex justify-center mb-8">
+            <div class="bg-white rounded-lg shadow-md p-1">
+                <button id="addClientTab" class="px-6 py-2 rounded-md font-medium transition-all bg-indigo-600 text-white">Add Client</button>
+                <button id="clientListTab" class="px-6 py-2 rounded-md font-medium transition-all text-gray-600 hover:text-indigo-600">Client List</button>
+                <button id="eligibilityTab" class="px-6 py-2 rounded-md font-medium transition-all text-gray-600 hover:text-indigo-600">Eligibility Reports</button>
+            </div>
+        </div>
+
+        <!-- Add Client Section -->
+        <div id="addClientSection" class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Add New Client</h2>
+            <form id="clientForm" class="space-y-6">
+                <!-- Client ID -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Client ID Code</label>
+                    <input type="text" id="clientId" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+
+                <!-- Diagnosis -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Diagnosis (Select all that apply)</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" value="Low Back Pain" class="diagnosis-checkbox mr-2">
+                            <span>Low Back Pain</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="Knee Pain" class="diagnosis-checkbox mr-2">
+                            <span>Knee Pain</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="Carpal Tunnel Syndrome" class="diagnosis-checkbox mr-2">
+                            <span>Carpal Tunnel Syndrome</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="Diabetes Mellitus" class="diagnosis-checkbox mr-2">
+                            <span>Diabetes Mellitus</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="Heel pain/Heel spur/Plantar Fasciitis" class="diagnosis-checkbox mr-2">
+                            <span>Heel pain/Heel spur/Plantar Fasciitis</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="Not Listed/NONE" class="diagnosis-checkbox mr-2">
+                            <span>Not Listed/NONE</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Insurance -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Primary Insurance Carrier</label>
+                    <select id="insurance" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <option value="">Select Insurance</option>
+                        <option value="Humana">Humana</option>
+                        <option value="Medicare">Medicare</option>
+                        <option value="Cigna">Cigna</option>
+                        <option value="Viva Health">Viva Health</option>
+                        <option value="BCBS">BCBS</option>
+                        <option value="United Healthcare">United Healthcare</option>
+                        <option value="Aetna">Aetna</option>
+                        <option value="MCD or Other">MCD or Other</option>
+                    </select>
+                </div>
+
+                <!-- Equipment History -->
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Back Brace -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Back Brace</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="backBraceAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="backBraceAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="backBraceAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="backBraceAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="backBraceGiven" class="mr-2">
+                            <span>Back brace given</span>
+                        </label>
+                        <input type="date" id="backBraceDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="backBracePaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="backBracePayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="backBracePayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="backBracePayment" value="unpaid" class="mr-2" checked>
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="backBraceReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="backBraceReturned" class="mr-2">
+                                <span>Brace has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Left Knee Brace -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Left Knee Brace</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="leftKneeBraceAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="leftKneeBraceAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="leftKneeBraceAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="leftKneeBraceAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="leftKneeBraceGiven" class="mr-2">
+                            <span>Left knee brace given</span>
+                        </label>
+                        <input type="date" id="leftKneeBraceDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="leftKneeBracePaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="leftKneeBracePayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="leftKneeBracePayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="leftKneeBracePayment" value="unpaid" class="mr-2" checked>
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="leftKneeBraceReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="leftKneeBraceReturned" class="mr-2">
+                                <span>Brace has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Right Knee Brace -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Right Knee Brace</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="rightKneeBraceAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="rightKneeBraceAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="rightKneeBraceAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="rightKneeBraceAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="rightKneeBraceGiven" class="mr-2">
+                            <span>Right knee brace given</span>
+                        </label>
+                        <input type="date" id="rightKneeBraceDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="rightKneeBracePaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="rightKneeBracePayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="rightKneeBracePayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="rightKneeBracePayment" value="unpaid" class="mr-2" checked>
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="rightKneeBraceReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="rightKneeBraceReturned" class="mr-2">
+                                <span>Brace has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Left Carpal Tunnel Splint -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Left Carpal Tunnel Splint</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="leftCarpalSplintAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="leftCarpalSplintAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="leftCarpalSplintAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="leftCarpalSplintAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="leftCarpalSplintGiven" class="mr-2">
+                            <span>Left carpal tunnel splint given</span>
+                        </label>
+                        <input type="date" id="leftCarpalSplintDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="leftCarpalSplintPaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="leftCarpalSplintPayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="leftCarpalSplintPayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="leftCarpalSplintPayment" value="unpaid" class="mr-2" checked>
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="leftCarpalSplintReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="leftCarpalSplintReturned" class="mr-2">
+                                <span>Splint has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Right Carpal Tunnel Splint -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Right Carpal Tunnel Splint</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="rightCarpalSplintAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="rightCarpalSplintAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="rightCarpalSplintAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="rightCarpalSplintAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="rightCarpalSplintGiven" class="mr-2">
+                            <span>Right carpal tunnel splint given</span>
+                        </label>
+                        <input type="date" id="rightCarpalSplintDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="rightCarpalSplintPaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="rightCarpalSplintPayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="rightCarpalSplintPayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="rightCarpalSplintPayment" value="unpaid" class="mr-2" checked>
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="rightCarpalSplintReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="rightCarpalSplintReturned" class="mr-2">
+                                <span>Splint has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Left Dorsiflexion Splint -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Left Dorsiflexion Splint</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="leftDorsiflexionSplintAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="leftDorsiflexionSplintAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="leftDorsiflexionSplintAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="leftDorsiflexionSplintAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="leftDorsiflexionSplintGiven" class="mr-2">
+                            <span>Left dorsiflexion splint given</span>
+                        </label>
+                        <input type="date" id="leftDorsiflexionSplintDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="leftDorsiflexionSplintPaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="leftDorsiflexionSplintPayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="leftDorsiflexionSplintPayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="leftDorsiflexionSplintPayment" value="unpaid" class="mr-2" checked>
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="leftDorsiflexionSplintReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="leftDorsiflexionSplintReturned" class="mr-2">
+                                <span>Splint has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Right Dorsiflexion Splint -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Right Dorsiflexion Splint</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="rightDorsiflexionSplintAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="rightDorsiflexionSplintAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="rightDorsiflexionSplintAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="rightDorsiflexionSplintAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="rightDorsiflexionSplintGiven" class="mr-2">
+                            <span>Right dorsiflexion splint given</span>
+                        </label>
+                        <input type="date" id="rightDorsiflexionSplintDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="rightDorsiflexionSplintPaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="rightDorsiflexionSplintPayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="rightDorsiflexionSplintPayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="rightDorsiflexionSplintPayment" value="unpaid" class="mr-2" checked>
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="rightDorsiflexionSplintReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="rightDorsiflexionSplintReturned" class="mr-2">
+                                <span>Splint has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Diabetic Shoes -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Diabetic Shoes</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="diabeticShoesAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="diabeticShoesAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="diabeticShoesAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="diabeticShoesAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="diabeticShoesGiven" class="mr-2">
+                            <span>Diabetic shoes given</span>
+                        </label>
+                        <input type="date" id="diabeticShoesDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="diabeticShoesPaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="diabeticShoesPayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="diabeticShoesPayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="diabeticShoesPayment" value="unpaid" class="mr-2" checked>
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="diabeticShoesReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="diabeticShoesReturned" class="mr-2">
+                                <span>Shoes have been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- TENS Unit -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">TENS Unit</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="tensUnitAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="tensUnitAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="tensUnitAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="tensUnitAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="tensUnitGiven" class="mr-2">
+                            <span>TENS unit given</span>
+                        </label>
+                        <input type="date" id="tensUnitDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="tensUnitPaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="tensUnitPayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="tensUnitPayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="tensUnitPayment" value="unpaid" class="mr-2" checked>
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="tensUnitReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="tensUnitReturned" class="mr-2">
+                                <span>TENS unit has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                    Add Client
+                </button>
+            </form>
+        </div>
+
+        <!-- Edit Client Section -->
+        <div id="editClientSection" class="bg-white rounded-xl shadow-lg p-8 mb-8 hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Edit Client Information</h2>
+            <form id="editClientForm" class="space-y-6">
+                <!-- Client ID (Read-only) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Client ID Code</label>
+                    <input type="text" id="editClientId" readonly class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed">
+                </div>
+
+                <!-- Diagnosis -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Diagnosis (Select all that apply)</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" value="Low Back Pain" class="edit-diagnosis-checkbox mr-2">
+                            <span>Low Back Pain</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="Knee Pain" class="edit-diagnosis-checkbox mr-2">
+                            <span>Knee Pain</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="Carpal Tunnel Syndrome" class="edit-diagnosis-checkbox mr-2">
+                            <span>Carpal Tunnel Syndrome</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="Diabetes Mellitus" class="edit-diagnosis-checkbox mr-2">
+                            <span>Diabetes Mellitus</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="Heel pain/Heel spur/Plantar Fasciitis" class="edit-diagnosis-checkbox mr-2">
+                            <span>Heel pain/Heel spur/Plantar Fasciitis</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" value="Not Listed/NONE" class="edit-diagnosis-checkbox mr-2">
+                            <span>Not Listed/NONE</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Insurance -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Primary Insurance Carrier</label>
+                    <select id="editInsurance" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <option value="">Select Insurance</option>
+                        <option value="Humana">Humana</option>
+                        <option value="Medicare">Medicare</option>
+                        <option value="Cigna">Cigna</option>
+                        <option value="Viva Health">Viva Health</option>
+                        <option value="BCBS">BCBS</option>
+                        <option value="United Healthcare">United Healthcare</option>
+                        <option value="Aetna">Aetna</option>
+                        <option value="MCD or Other">MCD or Other</option>
+                    </select>
+                </div>
+
+                <!-- Equipment History -->
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Back Brace -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Back Brace</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="editBackBraceAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="editBackBraceAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="editBackBraceAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="editBackBraceAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editBackBraceGiven" class="mr-2">
+                            <span>Back brace given</span>
+                        </label>
+                        <input type="date" id="editBackBraceDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="editBackBracePaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="editBackBracePayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editBackBracePayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editBackBracePayment" value="unpaid" class="mr-2">
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="editBackBraceReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="editBackBraceReturned" class="mr-2">
+                                <span>Brace has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Left Knee Brace -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Left Knee Brace</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="editLeftKneeBraceAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="editLeftKneeBraceAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="editLeftKneeBraceAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="editLeftKneeBraceAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editLeftKneeBraceGiven" class="mr-2">
+                            <span>Left knee brace given</span>
+                        </label>
+                        <input type="date" id="editLeftKneeBraceDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="editLeftKneeBracePaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="editLeftKneeBracePayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editLeftKneeBracePayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editLeftKneeBracePayment" value="unpaid" class="mr-2">
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="editLeftKneeBraceReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="editLeftKneeBraceReturned" class="mr-2">
+                                <span>Brace has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Right Knee Brace -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Right Knee Brace</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="editRightKneeBraceAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="editRightKneeBraceAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="editRightKneeBraceAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="editRightKneeBraceAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editRightKneeBraceGiven" class="mr-2">
+                            <span>Right knee brace given</span>
+                        </label>
+                        <input type="date" id="editRightKneeBraceDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="editRightKneeBracePaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="editRightKneeBracePayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editRightKneeBracePayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editRightKneeBracePayment" value="unpaid" class="mr-2">
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="editRightKneeBraceReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="editRightKneeBraceReturned" class="mr-2">
+                                <span>Brace has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Left Carpal Tunnel Splint -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Left Carpal Tunnel Splint</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="editLeftCarpalSplintAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="editLeftCarpalSplintAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="editLeftCarpalSplintAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="editLeftCarpalSplintAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editLeftCarpalSplintGiven" class="mr-2">
+                            <span>Left carpal tunnel splint given</span>
+                        </label>
+                        <input type="date" id="editLeftCarpalSplintDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="editLeftCarpalSplintPaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="editLeftCarpalSplintPayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editLeftCarpalSplintPayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editLeftCarpalSplintPayment" value="unpaid" class="mr-2">
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="editLeftCarpalSplintReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="editLeftCarpalSplintReturned" class="mr-2">
+                                <span>Splint has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Right Carpal Tunnel Splint -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Right Carpal Tunnel Splint</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="editRightCarpalSplintAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="editRightCarpalSplintAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="editRightCarpalSplintAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="editRightCarpalSplintAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editRightCarpalSplintGiven" class="mr-2">
+                            <span>Right carpal tunnel splint given</span>
+                        </label>
+                        <input type="date" id="editRightCarpalSplintDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="editRightCarpalSplintPaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="editRightCarpalSplintPayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editRightCarpalSplintPayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editRightCarpalSplintPayment" value="unpaid" class="mr-2">
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="editRightCarpalSplintReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="editRightCarpalSplintReturned" class="mr-2">
+                                <span>Splint has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Left Dorsiflexion Splint -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Left Dorsiflexion Splint</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="editLeftDorsiflexionSplintAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="editLeftDorsiflexionSplintAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="editLeftDorsiflexionSplintAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="editLeftDorsiflexionSplintAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editLeftDorsiflexionSplintGiven" class="mr-2">
+                            <span>Left dorsiflexion splint given</span>
+                        </label>
+                        <input type="date" id="editLeftDorsiflexionSplintDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="editLeftDorsiflexionSplintPaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="editLeftDorsiflexionSplintPayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editLeftDorsiflexionSplintPayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editLeftDorsiflexionSplintPayment" value="unpaid" class="mr-2">
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="editLeftDorsiflexionSplintReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="editLeftDorsiflexionSplintReturned" class="mr-2">
+                                <span>Splint has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Right Dorsiflexion Splint -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Right Dorsiflexion Splint</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="editRightDorsiflexionSplintAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="editRightDorsiflexionSplintAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="editRightDorsiflexionSplintAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="editRightDorsiflexionSplintAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editRightDorsiflexionSplintGiven" class="mr-2">
+                            <span>Right dorsiflexion splint given</span>
+                        </label>
+                        <input type="date" id="editRightDorsiflexionSplintDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="editRightDorsiflexionSplintPaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="editRightDorsiflexionSplintPayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editRightDorsiflexionSplintPayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editRightDorsiflexionSplintPayment" value="unpaid" class="mr-2">
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="editRightDorsiflexionSplintReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="editRightDorsiflexionSplintReturned" class="mr-2">
+                                <span>Splint has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Diabetic Shoes -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Diabetic Shoes</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="editDiabeticShoesAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="editDiabeticShoesAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="editDiabeticShoesAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="editDiabeticShoesAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editDiabeticShoesGiven" class="mr-2">
+                            <span>Diabetic shoes given</span>
+                        </label>
+                        <input type="date" id="editDiabeticShoesDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="editDiabeticShoesPaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="editDiabeticShoesPayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editDiabeticShoesPayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editDiabeticShoesPayment" value="unpaid" class="mr-2">
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="editDiabeticShoesReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="editDiabeticShoesReturned" class="mr-2">
+                                <span>Shoes have been returned</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- TENS Unit -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-800">TENS Unit</h3>
+                        
+                        <!-- Authorization Section -->
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="flex items-center mb-2">
+                                <input type="checkbox" id="editTensUnitAuthDone" class="mr-2">
+                                <span class="text-sm font-medium">Authorization done</span>
+                            </label>
+                            <div id="editTensUnitAuthSection" class="space-y-2 hidden">
+                                <input type="date" id="editTensUnitAuthDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Date">
+                                <input type="text" id="editTensUnitAuthNumber" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="Authorization Number">
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editTensUnitGiven" class="mr-2">
+                            <span>TENS unit given</span>
+                        </label>
+                        <input type="date" id="editTensUnitDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" disabled>
+                        
+                        <!-- Payment Status -->
+                        <div id="editTensUnitPaymentSection" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700">Payment Status:</label>
+                            <div class="space-y-1">
+                                <label class="flex items-center">
+                                    <input type="radio" name="editTensUnitPayment" value="paid" class="mr-2">
+                                    <span>Paid</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editTensUnitPayment" value="written-off" class="mr-2">
+                                    <span>Written Off</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="editTensUnitPayment" value="unpaid" class="mr-2">
+                                    <span>Unpaid</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Status -->
+                        <div id="editTensUnitReturnSection" class="hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="editTensUnitReturned" class="mr-2">
+                                <span>TENS unit has been returned</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button type="submit" class="flex-1 bg-indigo-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                        Update Client
+                    </button>
+                    <button type="button" onclick="cancelEdit()" class="flex-1 bg-gray-500 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-600 transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Client List Section -->
+        <div id="clientListSection" class="bg-white rounded-xl shadow-lg p-8 mb-8 hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Client Database</h2>
+            <div id="clientList" class="space-y-4">
+                <!-- Clients will be displayed here -->
+            </div>
+        </div>
+
+        <!-- Eligibility Reports Section -->
+        <div id="eligibilitySection" class="bg-white rounded-xl shadow-lg p-8 hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Eligibility Reports</h2>
+            
+            <!-- Eligibility Reports -->
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Insurance Eligibility Reports</h3>
+            
+            <!-- Back Brace -->
+            <div class="mb-4">
+                <h4 class="text-md font-medium text-gray-600 mb-2">Back Brace</h4>
+                <div class="grid md:grid-cols-2 gap-2">
+                    <button onclick="generateEligibilityReport('backBrace', 'unauthorized')" class="bg-green-600 text-white py-2 px-3 rounded-lg font-medium hover:bg-green-700 transition-colors text-sm">
+                        Eligible Unauthorized
+                    </button>
+                    <button onclick="generateEligibilityReport('backBrace', 'authorized')" class="bg-green-800 text-white py-2 px-3 rounded-lg font-medium hover:bg-green-900 transition-colors text-sm">
+                        Eligible Authorized
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Left Knee Brace -->
+            <div class="mb-4">
+                <h4 class="text-md font-medium text-gray-600 mb-2">Left Knee Brace</h4>
+                <div class="grid md:grid-cols-2 gap-2">
+                    <button onclick="generateEligibilityReport('leftKneeBrace', 'unauthorized')" class="bg-blue-600 text-white py-2 px-3 rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm">
+                        Eligible Unauthorized
+                    </button>
+                    <button onclick="generateEligibilityReport('leftKneeBrace', 'authorized')" class="bg-blue-800 text-white py-2 px-3 rounded-lg font-medium hover:bg-blue-900 transition-colors text-sm">
+                        Eligible Authorized
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Right Knee Brace -->
+            <div class="mb-4">
+                <h4 class="text-md font-medium text-gray-600 mb-2">Right Knee Brace</h4>
+                <div class="grid md:grid-cols-2 gap-2">
+                    <button onclick="generateEligibilityReport('rightKneeBrace', 'unauthorized')" class="bg-purple-600 text-white py-2 px-3 rounded-lg font-medium hover:bg-purple-700 transition-colors text-sm">
+                        Eligible Unauthorized
+                    </button>
+                    <button onclick="generateEligibilityReport('rightKneeBrace', 'authorized')" class="bg-purple-800 text-white py-2 px-3 rounded-lg font-medium hover:bg-purple-900 transition-colors text-sm">
+                        Eligible Authorized
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Left Carpal Splint -->
+            <div class="mb-4">
+                <h4 class="text-md font-medium text-gray-600 mb-2">Left Carpal Tunnel Splint</h4>
+                <div class="grid md:grid-cols-2 gap-2">
+                    <button onclick="generateEligibilityReport('leftCarpalSplint', 'unauthorized')" class="bg-orange-600 text-white py-2 px-3 rounded-lg font-medium hover:bg-orange-700 transition-colors text-sm">
+                        Eligible Unauthorized
+                    </button>
+                    <button onclick="generateEligibilityReport('leftCarpalSplint', 'authorized')" class="bg-orange-800 text-white py-2 px-3 rounded-lg font-medium hover:bg-orange-900 transition-colors text-sm">
+                        Eligible Authorized
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Right Carpal Splint -->
+            <div class="mb-4">
+                <h4 class="text-md font-medium text-gray-600 mb-2">Right Carpal Tunnel Splint</h4>
+                <div class="grid md:grid-cols-2 gap-2">
+                    <button onclick="generateEligibilityReport('rightCarpalSplint', 'unauthorized')" class="bg-red-600 text-white py-2 px-3 rounded-lg font-medium hover:bg-red-700 transition-colors text-sm">
+                        Eligible Unauthorized
+                    </button>
+                    <button onclick="generateEligibilityReport('rightCarpalSplint', 'authorized')" class="bg-red-800 text-white py-2 px-3 rounded-lg font-medium hover:bg-red-900 transition-colors text-sm">
+                        Eligible Authorized
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Left Dorsiflexion Splint -->
+            <div class="mb-4">
+                <h4 class="text-md font-medium text-gray-600 mb-2">Left Dorsiflexion Splint</h4>
+                <div class="grid md:grid-cols-2 gap-2">
+                    <button onclick="generateEligibilityReport('leftDorsiflexionSplint', 'unauthorized')" class="bg-teal-600 text-white py-2 px-3 rounded-lg font-medium hover:bg-teal-700 transition-colors text-sm">
+                        Eligible Unauthorized
+                    </button>
+                    <button onclick="generateEligibilityReport('leftDorsiflexionSplint', 'authorized')" class="bg-teal-800 text-white py-2 px-3 rounded-lg font-medium hover:bg-teal-900 transition-colors text-sm">
+                        Eligible Authorized
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Right Dorsiflexion Splint -->
+            <div class="mb-4">
+                <h4 class="text-md font-medium text-gray-600 mb-2">Right Dorsiflexion Splint</h4>
+                <div class="grid md:grid-cols-2 gap-2">
+                    <button onclick="generateEligibilityReport('rightDorsiflexionSplint', 'unauthorized')" class="bg-cyan-600 text-white py-2 px-3 rounded-lg font-medium hover:bg-cyan-700 transition-colors text-sm">
+                        Eligible Unauthorized
+                    </button>
+                    <button onclick="generateEligibilityReport('rightDorsiflexionSplint', 'authorized')" class="bg-cyan-800 text-white py-2 px-3 rounded-lg font-medium hover:bg-cyan-900 transition-colors text-sm">
+                        Eligible Authorized
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Diabetic Shoes -->
+            <div class="mb-4">
+                <h4 class="text-md font-medium text-gray-600 mb-2">Diabetic Shoes</h4>
+                <div class="grid md:grid-cols-2 gap-2">
+                    <button onclick="generateEligibilityReport('diabeticShoes', 'unauthorized')" class="bg-indigo-600 text-white py-2 px-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors text-sm">
+                        Eligible Unauthorized
+                    </button>
+                    <button onclick="generateEligibilityReport('diabeticShoes', 'authorized')" class="bg-indigo-800 text-white py-2 px-3 rounded-lg font-medium hover:bg-indigo-900 transition-colors text-sm">
+                        Eligible Authorized
+                    </button>
+                </div>
+            </div>
+            
+            <!-- TENS Unit -->
+            <div class="mb-6">
+                <h4 class="text-md font-medium text-gray-600 mb-2">TENS Unit</h4>
+                <div class="grid md:grid-cols-2 gap-2">
+                    <button onclick="generateEligibilityReport('tensUnit', 'unauthorized')" class="bg-pink-600 text-white py-2 px-3 rounded-lg font-medium hover:bg-pink-700 transition-colors text-sm">
+                        Eligible Unauthorized
+                    </button>
+                    <button onclick="generateEligibilityReport('tensUnit', 'authorized')" class="bg-pink-800 text-white py-2 px-3 rounded-lg font-medium hover:bg-pink-900 transition-colors text-sm">
+                        Eligible Authorized
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Unpaid Reports -->
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Payment Status Reports</h3>
+            <div class="grid md:grid-cols-3 gap-4 mb-6">
+                <button onclick="generateUnpaidReport('backBrace')" class="bg-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-yellow-700 transition-colors">
+                    Unpaid Back Braces
+                </button>
+                <button onclick="generateUnpaidReport('leftKneeBrace')" class="bg-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-yellow-700 transition-colors">
+                    Unpaid Left Knee Braces
+                </button>
+                <button onclick="generateUnpaidReport('rightKneeBrace')" class="bg-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-yellow-700 transition-colors">
+                    Unpaid Right Knee Braces
+                </button>
+                <button onclick="generateUnpaidReport('leftCarpalSplint')" class="bg-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-yellow-700 transition-colors">
+                    Unpaid Left Carpal Splints
+                </button>
+                <button onclick="generateUnpaidReport('rightCarpalSplint')" class="bg-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-yellow-700 transition-colors">
+                    Unpaid Right Carpal Splints
+                </button>
+                <button onclick="generateUnpaidReport('leftDorsiflexionSplint')" class="bg-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-yellow-700 transition-colors">
+                    Unpaid Left Dorsiflexion Splints
+                </button>
+                <button onclick="generateUnpaidReport('rightDorsiflexionSplint')" class="bg-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-yellow-700 transition-colors">
+                    Unpaid Right Dorsiflexion Splints
+                </button>
+                <button onclick="generateUnpaidReport('diabeticShoes')" class="bg-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-yellow-700 transition-colors">
+                    Unpaid Diabetic Shoes
+                </button>
+                <button onclick="generateUnpaidReport('tensUnit')" class="bg-yellow-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-yellow-700 transition-colors">
+                    Unpaid TENS Units
+                </button>
+            </div>
+            
+            <!-- Unpaid & Unreturned Reports -->
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Outstanding Equipment Reports</h3>
+            <div class="grid md:grid-cols-3 gap-4 mb-6">
+                <button onclick="generateUnpaidUnreturnedReport('backBrace')" class="bg-red-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-800 transition-colors">
+                    Outstanding Back Braces
+                </button>
+                <button onclick="generateUnpaidUnreturnedReport('leftKneeBrace')" class="bg-red-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-800 transition-colors">
+                    Outstanding Left Knee Braces
+                </button>
+                <button onclick="generateUnpaidUnreturnedReport('rightKneeBrace')" class="bg-red-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-800 transition-colors">
+                    Outstanding Right Knee Braces
+                </button>
+                <button onclick="generateUnpaidUnreturnedReport('leftCarpalSplint')" class="bg-red-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-800 transition-colors">
+                    Outstanding Left Carpal Splints
+                </button>
+                <button onclick="generateUnpaidUnreturnedReport('rightCarpalSplint')" class="bg-red-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-800 transition-colors">
+                    Outstanding Right Carpal Splints
+                </button>
+                <button onclick="generateUnpaidUnreturnedReport('leftDorsiflexionSplint')" class="bg-red-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-800 transition-colors">
+                    Outstanding Left Dorsiflexion Splints
+                </button>
+                <button onclick="generateUnpaidUnreturnedReport('rightDorsiflexionSplint')" class="bg-red-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-800 transition-colors">
+                    Outstanding Right Dorsiflexion Splints
+                </button>
+                <button onclick="generateUnpaidUnreturnedReport('diabeticShoes')" class="bg-red-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-800 transition-colors">
+                    Outstanding Diabetic Shoes
+                </button>
+                <button onclick="generateUnpaidUnreturnedReport('tensUnit')" class="bg-red-700 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-800 transition-colors">
+                    Outstanding TENS Units
+                </button>
+            </div>
+            
+            <div id="eligibilityResults" class="mt-6">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+        </div> <!-- End of mainApp -->
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDcCbcaflYB4acA7ZHVccTuptjMv5xoGl0",
+            authDomain: "dme-manager-ed11f.firebaseapp.com",
+            projectId: "dme-manager-ed11f",
+            storageBucket: "dme-manager-ed11f.firebasestorage.app",
+            messagingSenderId: "369867506521",
+            appId: "1:369867506521:web:6160c65e0ad337883b8248"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Cloud storage flag (automatically detect based on user authentication)
+        let USE_CLOUD_STORAGE = false;
+
+        // Global Firebase exports for HTML onclick functions
+        window.firebase = firebase;
+        window.auth = auth;
+        window.db = db;
+
+        // Current user and authentication
+        let currentUser = null;
+        let clients = [];
+        let chartNumberCounter = 1;
+        
+        // Check for existing login on page load
+        window.addEventListener('load', function() {
+            // Check Firebase authentication state
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    // User is signed in to Firebase
+                    console.log('Firebase user detected:', user.displayName || user.email);
+                    USE_CLOUD_STORAGE = true;
+                    await loginUserCloud(user);
+                } else {
+                    // No Firebase user, check for local login
+                    const savedUser = localStorage.getItem('dmeCurrentUser');
+                    const isFirebaseUser = localStorage.getItem('dmeFirebaseUser');
+                    
+                    if (savedUser && !isFirebaseUser) {
+                        // Verify the saved user still exists in the local system
+                        const users = JSON.parse(localStorage.getItem('dmeUsers')) || {};
+                        if (users[savedUser]) {
+                            USE_CLOUD_STORAGE = false;
+                            loginUser(savedUser);
+                        } else {
+                            // User doesn't exist anymore, clear the saved login
+                            localStorage.removeItem('dmeCurrentUser');
+                            localStorage.removeItem('dmeFirebaseUser');
+                        }
+                    } else if (isFirebaseUser) {
+                        // Was a Firebase user but not authenticated, clear local storage
+                        localStorage.removeItem('dmeCurrentUser');
+                        localStorage.removeItem('dmeFirebaseUser');
+                    }
+                }
+            });
+        });
+        
+        // Toggle password visibility function
+        function togglePasswordVisibility(inputId, iconId) {
+            const passwordInput = document.getElementById(inputId);
+            const toggleIcon = document.getElementById(iconId);
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                // Change to "eye-slash" icon (hidden)
+                toggleIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L5.636 5.636m4.242 4.242L15.12 15.12m-4.242-4.242l4.242-4.242m0 0L19.364 5.636M15.12 15.12l4.242 4.242" />
+                `;
+            } else {
+                passwordInput.type = 'password';
+                // Change to "eye" icon (visible)
+                toggleIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                `;
+            }
+        }
+        
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            if (username && password) {
+                // Try Firebase authentication first
+                const cloudResult = await authenticateUserCloud(username, password);
+                
+                if (cloudResult.success) {
+                    USE_CLOUD_STORAGE = true;
+                    console.log('Logged in with Firebase authentication');
+                    loginUserCloud(cloudResult.user);
+                } else {
+                    // Fallback to local authentication
+                    console.log('Firebase login failed, trying local authentication:', cloudResult.error);
+                    if (authenticateUser(username, password)) {
+                        USE_CLOUD_STORAGE = false;
+                        console.log('Logged in with local authentication');
+                        loginUser(username);
+                    } else {
+                        alert('Invalid username or password. Please try again.');
+                        document.getElementById('password').value = '';
+                    }
+                }
+            }
+        });
+        
+        // Registration form handler
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                alert('Passwords do not match. Please try again.');
+                return;
+            }
+            
+            if (username && password) {
+                // Try Firebase registration first
+                const cloudResult = await registerUserCloud(username, password);
+                
+                if (cloudResult.success) {
+                    alert('Account created successfully in cloud! You can now login.');
+                    showLoginForm();
+                    document.getElementById('username').value = username;
+                } else {
+                    // Fallback to local registration
+                    console.log('Firebase registration failed, trying local registration:', cloudResult.error);
+                    if (registerUser(username, password)) {
+                        alert('Account created successfully locally! You can now login.');
+                        showLoginForm();
+                        document.getElementById('username').value = username;
+                    } else {
+                        alert('Username already exists. Please choose a different username.');
+                    }
+                }
+            }
+        });
+        
+        // Show/hide forms
+        function showRegisterForm() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('registerSection').classList.remove('hidden');
+            // Clear form
+            document.getElementById('registerForm').reset();
+        }
+        
+        function showLoginForm() {
+            document.getElementById('registerSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+            // Clear form
+            document.getElementById('loginForm').reset();
+        }
+        
+        // Authentication functions
+        function hashPassword(password) {
+            // Simple hash function (in production, use proper hashing like bcrypt)
+            let hash = 0;
+            for (let i = 0; i < password.length; i++) {
+                const char = password.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return hash.toString();
+        }
+        
+        // Firebase Authentication Functions
+        async function registerUserCloud(username, password) {
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(
+                    `${username}@dmemanager.local`, 
+                    password
+                );
+                
+                // Update the user's display name
+                await userCredential.user.updateProfile({
+                    displayName: username
+                });
+                
+                // Store additional user info in Firestore
+                await db.collection('dmeUsers').doc(userCredential.user.uid).set({
+                    username: username,
+                    created: new Date().toISOString(),
+                    lastLogin: new Date().toISOString()
+                });
+                
+                return { success: true, user: userCredential.user };
+            } catch (error) {
+                console.error('Cloud registration error:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function authenticateUserCloud(username, password) {
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(
+                    `${username}@dmemanager.local`, 
+                    password
+                );
+                
+                // Update last login
+                await db.collection('dmeUsers').doc(userCredential.user.uid).update({
+                    lastLogin: new Date().toISOString()
+                });
+                
+                return { success: true, user: userCredential.user };
+            } catch (error) {
+                console.error('Cloud authentication error:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Local Storage Authentication Functions (fallback)
+        function registerUser(username, password) {
+            const users = JSON.parse(localStorage.getItem('dmeUsers')) || {};
+            
+            if (users[username]) {
+                return false; // User already exists
+            }
+            
+            users[username] = {
+                password: hashPassword(password),
+                created: new Date().toISOString()
+            };
+            
+            localStorage.setItem('dmeUsers', JSON.stringify(users));
+            return true;
+        }
+        
+        function authenticateUser(username, password) {
+            const users = JSON.parse(localStorage.getItem('dmeUsers')) || {};
+            const user = users[username];
+            
+            if (!user) {
+                return false;
+            }
+            
+            return user.password === hashPassword(password);
+        }
+        
+        // Cloud login function
+        async function loginUserCloud(user) {
+            currentUser = user.displayName || user.email.split('@')[0];
+            
+            // Save Firebase user info
+            localStorage.setItem('dmeCurrentUser', currentUser);
+            localStorage.setItem('dmeFirebaseUser', 'true');
+            
+            // Load user-specific data from cloud
+            await loadUserDataCloud();
+            
+            // Show main app and hide login/register
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('registerSection').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Display username with cloud indicator
+            const displayName = currentUser.toUpperCase().includes('NARAPS') ? 
+                `${currentUser} (NARAPS Shared - Cloud)` : `${currentUser} (Cloud Synced)`;
+            document.getElementById('currentUser').textContent = displayName;
+            
+            // Clear login form
+            document.getElementById('loginForm').reset();
+            
+            // Initialize app
+            migrateExistingClientsCloud();
+            
+            // Update storage status indicator
+            updateStorageStatus();
+        }
+
+        // Local login function
+        function loginUser(username) {
+            currentUser = username;
+            localStorage.setItem('dmeCurrentUser', username);
+            localStorage.removeItem('dmeFirebaseUser'); // Clear Firebase flag
+            
+            // Load user-specific data
+            loadUserData();
+            
+            // Show main app and hide login/register
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('registerSection').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Display username with local indicator
+            const displayName = username.toUpperCase().includes('NARAPS') ? 
+                `${username} (NARAPS Shared - Local)` : `${username} (Local Storage)`;
+            document.getElementById('currentUser').textContent = displayName;
+            
+            // Clear login form
+            document.getElementById('loginForm').reset();
+            
+            // Initialize app
+            migrateExistingClients();
+            
+            // Update storage status indicator
+            updateStorageStatus();
+        }
+
+        // Update storage status indicator
+        function updateStorageStatus() {
+            const statusElement = document.getElementById('storageStatus');
+            const statusTextElement = document.getElementById('storageStatusText');
+            
+            if (!statusElement || !statusTextElement) return;
+            
+            if (USE_CLOUD_STORAGE) {
+                statusElement.className = 'mt-3 inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm';
+                statusTextElement.textContent = 'Cloud storage active - syncs across all devices';
+            } else {
+                statusElement.className = 'mt-3 inline-flex items-center bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm';
+                statusTextElement.textContent = 'Local storage - data saved in this browser only';
+            }
+        }
+        
+        // Logout function
+        async function logout() {
+            if (confirm('Are you sure you want to logout? Your data will be saved.')) {
+                // Save current data before logout
+                if (USE_CLOUD_STORAGE) {
+                    await saveUserDataCloud();
+                } else {
+                    saveUserData();
+                }
+                
+                // Sign out from Firebase if logged in with cloud
+                if (USE_CLOUD_STORAGE && auth.currentUser) {
+                    try {
+                        await auth.signOut();
+                        console.log('Signed out from Firebase');
+                    } catch (error) {
+                        console.error('Error signing out from Firebase:', error);
+                    }
+                }
+                
+                // Clear current session
+                currentUser = null;
+                USE_CLOUD_STORAGE = false;
+                localStorage.removeItem('dmeCurrentUser');
+                localStorage.removeItem('dmeFirebaseUser');
+                
+                // Reset forms and show login
+                document.getElementById('loginForm').reset();
+                document.getElementById('registerForm').reset();
+                document.getElementById('loginSection').classList.remove('hidden');
+                document.getElementById('registerSection').classList.add('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+                
+                // Clear local variables
+                clients = [];
+                chartNumberCounter = 1;
+                
+                // Switch to add client tab for next login
+                switchTab('addClient');
+            }
+        }
+        
+        // Export/Import functions for cross-browser data transfer
+        function exportNARAPSData() {
+            const narapsClients = localStorage.getItem('dmeClients_NARAPS_SHARED') || '[]';
+            const narapsCounter = localStorage.getItem('dmeChartNumberCounter_NARAPS_SHARED') || '1';
+            const narapsUsers = {};
+            
+            // Get all NARAPS users
+            const allUsers = JSON.parse(localStorage.getItem('dmeUsers')) || {};
+            Object.keys(allUsers).forEach(username => {
+                if (username.toUpperCase().includes('NARAPS')) {
+                    narapsUsers[username] = allUsers[username];
+                }
+            });
+            
+            const exportData = {
+                clients: JSON.parse(narapsClients),
+                chartNumberCounter: parseInt(narapsCounter),
+                users: narapsUsers,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `NARAPS_Data_Export_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            alert('NARAPS data exported successfully! Use this file to import data in another browser.');
+        }
+        
+        function importNARAPSData() {
+            document.getElementById('importFile').click();
+        }
+        
+        // Handle file import
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('importFile').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importData = JSON.parse(e.target.result);
+                        
+                        if (!importData.clients || !importData.users) {
+                            alert('Invalid import file format.');
+                            return;
+                        }
+                        
+                        // Confirm import
+                        const currentClientsCount = JSON.parse(localStorage.getItem('dmeClients_NARAPS_SHARED') || '[]').length;
+                        const importClientsCount = importData.clients.length;
+                        
+                        if (!confirm(`This will replace current NARAPS data:\n\nCurrent clients: ${currentClientsCount}\nImport clients: ${importClientsCount}\n\nContinue with import?`)) {
+                            return;
+                        }
+                        
+                        // Import the data
+                        localStorage.setItem('dmeClients_NARAPS_SHARED', JSON.stringify(importData.clients));
+                        localStorage.setItem('dmeChartNumberCounter_NARAPS_SHARED', importData.chartNumberCounter.toString());
+                        
+                        // Import users
+                        const existingUsers = JSON.parse(localStorage.getItem('dmeUsers')) || {};
+                        Object.keys(importData.users).forEach(username => {
+                            existingUsers[username] = importData.users[username];
+                        });
+                        localStorage.setItem('dmeUsers', JSON.stringify(existingUsers));
+                        
+                        alert(`Import successful! Imported ${importClientsCount} clients and ${Object.keys(importData.users).length} NARAPS users.`);
+                        
+                        // Reload current user data if they're a NARAPS user
+                        if (currentUser && currentUser.toUpperCase().includes('NARAPS')) {
+                            loadUserData();
+                            if (document.getElementById('clientListSection').style.display !== 'none') {
+                                displayClients();
+                            }
+                        }
+                        
+                    } catch (error) {
+                        alert('Error importing file: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+                
+                // Clear the input
+                e.target.value = '';
+            });
+        });
+        
+        // Get data key for user (NARAPS users share data)
+        function getDataKey(username, keyType) {
+            if (username.toUpperCase().includes('NARAPS')) {
+                return `${keyType}_NARAPS_SHARED`;
+            }
+            return `${keyType}_${username}`;
+        }
+        
+        // Cloud data storage functions
+        async function loadUserDataCloud() {
+            if (!currentUser || !auth.currentUser) return;
+            
+            try {
+                console.log('Loading data from cloud for user:', currentUser);
+                
+                // Load clients data
+                const clientsDoc = await db.collection('dmeUsers').doc(auth.currentUser.uid).collection('data').doc('clients').get();
+                if (clientsDoc.exists) {
+                    const data = clientsDoc.data();
+                    clients = data.clients || [];
+                    chartNumberCounter = data.chartNumberCounter || 1;
+                    console.log('Loaded from cloud - clients count:', clients.length, 'counter:', chartNumberCounter);
+                } else {
+                    console.log('No cloud data found, starting fresh');
+                    clients = [];
+                    chartNumberCounter = 1;
+                }
+            } catch (error) {
+                console.error('Error loading cloud data:', error);
+                // Fallback to localStorage
+                loadUserData();
+            }
+        }
+
+        async function saveUserDataCloud() {
+            if (!currentUser || !auth.currentUser) return;
+            
+            try {
+                console.log('Saving data to cloud for user:', currentUser);
+                console.log('Saving clients count:', clients.length, 'counter:', chartNumberCounter);
+                
+                await db.collection('dmeUsers').doc(auth.currentUser.uid).collection('data').doc('clients').set({
+                    clients: clients,
+                    chartNumberCounter: chartNumberCounter,
+                    lastUpdated: new Date().toISOString()
+                });
+                
+                console.log('Data saved to cloud successfully');
+                
+                // Also save to localStorage as backup
+                saveUserData();
+            } catch (error) {
+                console.error('Error saving to cloud:', error);
+                // Fallback to localStorage
+                saveUserData();
+            }
+        }
+
+        // Cloud migration function
+        async function migrateExistingClientsCloud() {
+            if (!currentUser) return;
+            
+            let needsMigration = false;
+            let tempCounter = chartNumberCounter;
+            
+            clients.forEach(client => {
+                if (!client.chartNumber) {
+                    client.chartNumber = String(tempCounter).padStart(3, '0');
+                    tempCounter++;
+                    needsMigration = true;
+                }
+            });
+            
+            if (needsMigration) {
+                chartNumberCounter = tempCounter;
+                await saveUserDataCloud();
+                console.log('Cloud migration completed, added chart numbers to existing clients');
+            }
+        }
+
+        // Load user-specific data (local storage)
+        function loadUserData() {
+            if (!currentUser) return;
+            
+            const userKey = getDataKey(currentUser, 'dmeClients');
+            const counterKey = getDataKey(currentUser, 'dmeChartNumberCounter');
+            
+            // Debug logging
+            console.log('Loading data for user:', currentUser);
+            console.log('Using data key:', userKey);
+            console.log('Available localStorage keys:', Object.keys(localStorage));
+            
+            const savedClients = localStorage.getItem(userKey);
+            const savedCounter = localStorage.getItem(counterKey);
+            
+            console.log('Saved clients data:', savedClients);
+            console.log('Saved counter:', savedCounter);
+            
+            clients = JSON.parse(savedClients) || [];
+            chartNumberCounter = parseInt(savedCounter) || 1;
+            
+            console.log('Loaded clients count:', clients.length);
+            console.log('Chart number counter:', chartNumberCounter);
+        }
+        
+        // Save user-specific data
+        function saveUserData() {
+            if (!currentUser) return;
+            
+            const userKey = getDataKey(currentUser, 'dmeClients');
+            const counterKey = getDataKey(currentUser, 'dmeChartNumberCounter');
+            
+            // Debug logging
+            console.log('Saving data for user:', currentUser);
+            console.log('Using data key:', userKey);
+            console.log('Saving clients count:', clients.length);
+            console.log('Saving chart counter:', chartNumberCounter);
+            
+            localStorage.setItem(userKey, JSON.stringify(clients));
+            localStorage.setItem(counterKey, chartNumberCounter.toString());
+            
+            console.log('Data saved successfully');
+        }
+
+        // Unified save function that uses cloud or local storage
+        async function saveData() {
+            if (USE_CLOUD_STORAGE) {
+                await saveUserDataCloud();
+            } else {
+                saveUserData();
+            }
+        }
+        
+        // Migration function to add chart numbers to existing clients
+        function migrateExistingClients() {
+            if (!currentUser) return;
+            
+            let needsMigration = false;
+            let tempCounter = chartNumberCounter;
+            
+            clients.forEach(client => {
+                if (!client.chartNumber) {
+                    client.chartNumber = String(tempCounter).padStart(3, '0');
+                    tempCounter++;
+                    needsMigration = true;
+                }
+            });
+            
+            if (needsMigration) {
+                chartNumberCounter = tempCounter;
+                saveData();
+            }
+        }
+
+        // Tab switching
+        document.getElementById('addClientTab').addEventListener('click', () => switchTab('addClient'));
+        document.getElementById('clientListTab').addEventListener('click', () => switchTab('clientList'));
+        document.getElementById('eligibilityTab').addEventListener('click', () => switchTab('eligibility'));
+
+        function switchTab(tab) {
+            // Hide all sections
+            document.getElementById('addClientSection').classList.add('hidden');
+            document.getElementById('editClientSection').classList.add('hidden');
+            document.getElementById('clientListSection').classList.add('hidden');
+            document.getElementById('eligibilitySection').classList.add('hidden');
+
+            // Reset tab styles
+            document.querySelectorAll('button[id$="Tab"]').forEach(btn => {
+                btn.className = 'px-6 py-2 rounded-md font-medium transition-all text-gray-600 hover:text-indigo-600';
+            });
+
+            // Show selected section and highlight tab
+            if (tab === 'addClient') {
+                document.getElementById('addClientSection').classList.remove('hidden');
+                document.getElementById('addClientTab').className = 'px-6 py-2 rounded-md font-medium transition-all bg-indigo-600 text-white';
+            } else if (tab === 'clientList') {
+                document.getElementById('clientListSection').classList.remove('hidden');
+                document.getElementById('clientListTab').className = 'px-6 py-2 rounded-md font-medium transition-all bg-indigo-600 text-white';
+                displayClients();
+            } else if (tab === 'eligibility') {
+                document.getElementById('eligibilitySection').classList.remove('hidden');
+                document.getElementById('eligibilityTab').className = 'px-6 py-2 rounded-md font-medium transition-all bg-indigo-600 text-white';
+            }
+        }
+
+        // Enable/disable date inputs based on checkboxes
+        document.getElementById('backBraceGiven').addEventListener('change', function() {
+            document.getElementById('backBraceDate').disabled = !this.checked;
+            document.getElementById('backBracePaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('backBraceReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('backBraceDate').value = '';
+                document.querySelector('input[name="backBracePayment"][value="unpaid"]').checked = true;
+                document.getElementById('backBraceReturned').checked = false;
+            }
+        });
+
+        document.getElementById('leftKneeBraceGiven').addEventListener('change', function() {
+            document.getElementById('leftKneeBraceDate').disabled = !this.checked;
+            document.getElementById('leftKneeBracePaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('leftKneeBraceReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('leftKneeBraceDate').value = '';
+                document.querySelector('input[name="leftKneeBracePayment"][value="unpaid"]').checked = true;
+                document.getElementById('leftKneeBraceReturned').checked = false;
+            }
+        });
+
+        document.getElementById('rightKneeBraceGiven').addEventListener('change', function() {
+            document.getElementById('rightKneeBraceDate').disabled = !this.checked;
+            document.getElementById('rightKneeBracePaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('rightKneeBraceReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('rightKneeBraceDate').value = '';
+                document.querySelector('input[name="rightKneeBracePayment"][value="unpaid"]').checked = true;
+                document.getElementById('rightKneeBraceReturned').checked = false;
+            }
+        });
+
+        document.getElementById('leftCarpalSplintGiven').addEventListener('change', function() {
+            document.getElementById('leftCarpalSplintDate').disabled = !this.checked;
+            document.getElementById('leftCarpalSplintPaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('leftCarpalSplintReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('leftCarpalSplintDate').value = '';
+                document.querySelector('input[name="leftCarpalSplintPayment"][value="unpaid"]').checked = true;
+                document.getElementById('leftCarpalSplintReturned').checked = false;
+            }
+        });
+
+        document.getElementById('rightCarpalSplintGiven').addEventListener('change', function() {
+            document.getElementById('rightCarpalSplintDate').disabled = !this.checked;
+            document.getElementById('rightCarpalSplintPaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('rightCarpalSplintReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('rightCarpalSplintDate').value = '';
+                document.querySelector('input[name="rightCarpalSplintPayment"][value="unpaid"]').checked = true;
+                document.getElementById('rightCarpalSplintReturned').checked = false;
+            }
+        });
+
+        // Edit form event listeners for equipment checkboxes
+        document.getElementById('editBackBraceGiven').addEventListener('change', function() {
+            document.getElementById('editBackBraceDate').disabled = !this.checked;
+            document.getElementById('editBackBracePaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('editBackBraceReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editBackBraceDate').value = '';
+                document.querySelector('input[name="editBackBracePayment"][value="unpaid"]').checked = true;
+                document.getElementById('editBackBraceReturned').checked = false;
+            }
+        });
+
+        document.getElementById('editLeftKneeBraceGiven').addEventListener('change', function() {
+            document.getElementById('editLeftKneeBraceDate').disabled = !this.checked;
+            document.getElementById('editLeftKneeBracePaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('editLeftKneeBraceReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editLeftKneeBraceDate').value = '';
+                document.querySelector('input[name="editLeftKneeBracePayment"][value="unpaid"]').checked = true;
+                document.getElementById('editLeftKneeBraceReturned').checked = false;
+            }
+        });
+
+        document.getElementById('editRightKneeBraceGiven').addEventListener('change', function() {
+            document.getElementById('editRightKneeBraceDate').disabled = !this.checked;
+            document.getElementById('editRightKneeBracePaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('editRightKneeBraceReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editRightKneeBraceDate').value = '';
+                document.querySelector('input[name="editRightKneeBracePayment"][value="unpaid"]').checked = true;
+                document.getElementById('editRightKneeBraceReturned').checked = false;
+            }
+        });
+
+        document.getElementById('editLeftCarpalSplintGiven').addEventListener('change', function() {
+            document.getElementById('editLeftCarpalSplintDate').disabled = !this.checked;
+            document.getElementById('editLeftCarpalSplintPaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('editLeftCarpalSplintReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editLeftCarpalSplintDate').value = '';
+                document.querySelector('input[name="editLeftCarpalSplintPayment"][value="unpaid"]').checked = true;
+                document.getElementById('editLeftCarpalSplintReturned').checked = false;
+            }
+        });
+
+        document.getElementById('editRightCarpalSplintGiven').addEventListener('change', function() {
+            document.getElementById('editRightCarpalSplintDate').disabled = !this.checked;
+            document.getElementById('editRightCarpalSplintPaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('editRightCarpalSplintReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editRightCarpalSplintDate').value = '';
+                document.querySelector('input[name="editRightCarpalSplintPayment"][value="unpaid"]').checked = true;
+                document.getElementById('editRightCarpalSplintReturned').checked = false;
+            }
+        });
+
+        // Left Dorsiflexion Splint event listeners
+        document.getElementById('leftDorsiflexionSplintGiven').addEventListener('change', function() {
+            document.getElementById('leftDorsiflexionSplintDate').disabled = !this.checked;
+            document.getElementById('leftDorsiflexionSplintPaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('leftDorsiflexionSplintReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('leftDorsiflexionSplintDate').value = '';
+                document.querySelector('input[name="leftDorsiflexionSplintPayment"][value="unpaid"]').checked = true;
+                document.getElementById('leftDorsiflexionSplintReturned').checked = false;
+            }
+        });
+
+        document.getElementById('editLeftDorsiflexionSplintGiven').addEventListener('change', function() {
+            document.getElementById('editLeftDorsiflexionSplintDate').disabled = !this.checked;
+            document.getElementById('editLeftDorsiflexionSplintPaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('editLeftDorsiflexionSplintReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editLeftDorsiflexionSplintDate').value = '';
+                document.querySelector('input[name="editLeftDorsiflexionSplintPayment"][value="unpaid"]').checked = true;
+                document.getElementById('editLeftDorsiflexionSplintReturned').checked = false;
+            }
+        });
+
+        // Right Dorsiflexion Splint event listeners
+        document.getElementById('rightDorsiflexionSplintGiven').addEventListener('change', function() {
+            document.getElementById('rightDorsiflexionSplintDate').disabled = !this.checked;
+            document.getElementById('rightDorsiflexionSplintPaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('rightDorsiflexionSplintReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('rightDorsiflexionSplintDate').value = '';
+                document.querySelector('input[name="rightDorsiflexionSplintPayment"][value="unpaid"]').checked = true;
+                document.getElementById('rightDorsiflexionSplintReturned').checked = false;
+            }
+        });
+
+        document.getElementById('editRightDorsiflexionSplintGiven').addEventListener('change', function() {
+            document.getElementById('editRightDorsiflexionSplintDate').disabled = !this.checked;
+            document.getElementById('editRightDorsiflexionSplintPaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('editRightDorsiflexionSplintReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editRightDorsiflexionSplintDate').value = '';
+                document.querySelector('input[name="editRightDorsiflexionSplintPayment"][value="unpaid"]').checked = true;
+                document.getElementById('editRightDorsiflexionSplintReturned').checked = false;
+            }
+        });
+
+        // Diabetic Shoes event listeners
+        document.getElementById('diabeticShoesGiven').addEventListener('change', function() {
+            document.getElementById('diabeticShoesDate').disabled = !this.checked;
+            document.getElementById('diabeticShoesPaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('diabeticShoesReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('diabeticShoesDate').value = '';
+                document.querySelector('input[name="diabeticShoesPayment"][value="unpaid"]').checked = true;
+                document.getElementById('diabeticShoesReturned').checked = false;
+            }
+        });
+
+        document.getElementById('editDiabeticShoesGiven').addEventListener('change', function() {
+            document.getElementById('editDiabeticShoesDate').disabled = !this.checked;
+            document.getElementById('editDiabeticShoesPaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('editDiabeticShoesReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editDiabeticShoesDate').value = '';
+                document.querySelector('input[name="editDiabeticShoesPayment"][value="unpaid"]').checked = true;
+                document.getElementById('editDiabeticShoesReturned').checked = false;
+            }
+        });
+
+        // TENS Unit event listeners
+        document.getElementById('tensUnitGiven').addEventListener('change', function() {
+            document.getElementById('tensUnitDate').disabled = !this.checked;
+            document.getElementById('tensUnitPaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('tensUnitReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('tensUnitDate').value = '';
+                document.querySelector('input[name="tensUnitPayment"][value="unpaid"]').checked = true;
+                document.getElementById('tensUnitReturned').checked = false;
+            }
+        });
+
+        document.getElementById('editTensUnitGiven').addEventListener('change', function() {
+            document.getElementById('editTensUnitDate').disabled = !this.checked;
+            document.getElementById('editTensUnitPaymentSection').classList.toggle('hidden', !this.checked);
+            document.getElementById('editTensUnitReturnSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editTensUnitDate').value = '';
+                document.querySelector('input[name="editTensUnitPayment"][value="unpaid"]').checked = true;
+                document.getElementById('editTensUnitReturned').checked = false;
+            }
+        });
+
+        // Authorization event listeners for new equipment types
+        document.getElementById('leftDorsiflexionSplintAuthDone').addEventListener('change', function() {
+            document.getElementById('leftDorsiflexionSplintAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('leftDorsiflexionSplintAuthDate').value = '';
+                document.getElementById('leftDorsiflexionSplintAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('rightDorsiflexionSplintAuthDone').addEventListener('change', function() {
+            document.getElementById('rightDorsiflexionSplintAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('rightDorsiflexionSplintAuthDate').value = '';
+                document.getElementById('rightDorsiflexionSplintAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('diabeticShoesAuthDone').addEventListener('change', function() {
+            document.getElementById('diabeticShoesAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('diabeticShoesAuthDate').value = '';
+                document.getElementById('diabeticShoesAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('tensUnitAuthDone').addEventListener('change', function() {
+            document.getElementById('tensUnitAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('tensUnitAuthDate').value = '';
+                document.getElementById('tensUnitAuthNumber').value = '';
+            }
+        });
+
+        // Authorization event listeners for original equipment types
+        document.getElementById('backBraceAuthDone').addEventListener('change', function() {
+            document.getElementById('backBraceAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('backBraceAuthDate').value = '';
+                document.getElementById('backBraceAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('leftKneeBraceAuthDone').addEventListener('change', function() {
+            document.getElementById('leftKneeBraceAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('leftKneeBraceAuthDate').value = '';
+                document.getElementById('leftKneeBraceAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('rightKneeBraceAuthDone').addEventListener('change', function() {
+            document.getElementById('rightKneeBraceAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('rightKneeBraceAuthDate').value = '';
+                document.getElementById('rightKneeBraceAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('leftCarpalSplintAuthDone').addEventListener('change', function() {
+            document.getElementById('leftCarpalSplintAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('leftCarpalSplintAuthDate').value = '';
+                document.getElementById('leftCarpalSplintAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('rightCarpalSplintAuthDone').addEventListener('change', function() {
+            document.getElementById('rightCarpalSplintAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('rightCarpalSplintAuthDate').value = '';
+                document.getElementById('rightCarpalSplintAuthNumber').value = '';
+            }
+        });
+
+        // Edit form authorization event listeners
+        document.getElementById('editBackBraceAuthDone').addEventListener('change', function() {
+            document.getElementById('editBackBraceAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editBackBraceAuthDate').value = '';
+                document.getElementById('editBackBraceAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('editLeftKneeBraceAuthDone').addEventListener('change', function() {
+            document.getElementById('editLeftKneeBraceAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editLeftKneeBraceAuthDate').value = '';
+                document.getElementById('editLeftKneeBraceAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('editRightKneeBraceAuthDone').addEventListener('change', function() {
+            document.getElementById('editRightKneeBraceAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editRightKneeBraceAuthDate').value = '';
+                document.getElementById('editRightKneeBraceAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('editLeftCarpalSplintAuthDone').addEventListener('change', function() {
+            document.getElementById('editLeftCarpalSplintAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editLeftCarpalSplintAuthDate').value = '';
+                document.getElementById('editLeftCarpalSplintAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('editRightCarpalSplintAuthDone').addEventListener('change', function() {
+            document.getElementById('editRightCarpalSplintAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editRightCarpalSplintAuthDate').value = '';
+                document.getElementById('editRightCarpalSplintAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('editLeftDorsiflexionSplintAuthDone').addEventListener('change', function() {
+            document.getElementById('editLeftDorsiflexionSplintAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editLeftDorsiflexionSplintAuthDate').value = '';
+                document.getElementById('editLeftDorsiflexionSplintAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('editRightDorsiflexionSplintAuthDone').addEventListener('change', function() {
+            document.getElementById('editRightDorsiflexionSplintAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editRightDorsiflexionSplintAuthDate').value = '';
+                document.getElementById('editRightDorsiflexionSplintAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('editDiabeticShoesAuthDone').addEventListener('change', function() {
+            document.getElementById('editDiabeticShoesAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editDiabeticShoesAuthDate').value = '';
+                document.getElementById('editDiabeticShoesAuthNumber').value = '';
+            }
+        });
+
+        document.getElementById('editTensUnitAuthDone').addEventListener('change', function() {
+            document.getElementById('editTensUnitAuthSection').classList.toggle('hidden', !this.checked);
+            if (!this.checked) {
+                document.getElementById('editTensUnitAuthDate').value = '';
+                document.getElementById('editTensUnitAuthNumber').value = '';
+            }
+        });
+
+        // Form submission
+        document.getElementById('clientForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const clientId = document.getElementById('clientId').value;
+            
+            // Check if client ID already exists
+            if (clients.find(client => client.id === clientId)) {
+                alert('Client ID already exists. Please use a different ID.');
+                return;
+            }
+
+            // Get selected diagnoses
+            const diagnoses = Array.from(document.querySelectorAll('.diagnosis-checkbox:checked'))
+                .map(checkbox => checkbox.value);
+
+            if (diagnoses.length === 0) {
+                alert('Please select at least one diagnosis.');
+                return;
+            }
+
+            const client = {
+                id: clientId,
+                chartNumber: String(chartNumberCounter).padStart(3, '0'),
+                diagnoses: diagnoses,
+                insurance: document.getElementById('insurance').value,
+                equipment: {
+                    backBrace: {
+                        given: document.getElementById('backBraceGiven').checked,
+                        date: document.getElementById('backBraceDate').value || null,
+                        paymentStatus: document.getElementById('backBraceGiven').checked ? 
+                            document.querySelector('input[name="backBracePayment"]:checked').value : null,
+                        returned: document.getElementById('backBraceGiven').checked ? 
+                            document.getElementById('backBraceReturned').checked : false,
+                        authDone: document.getElementById('backBraceAuthDone').checked,
+                        authDate: document.getElementById('backBraceAuthDone').checked ? 
+                            document.getElementById('backBraceAuthDate').value || null : null,
+                        authNumber: document.getElementById('backBraceAuthDone').checked ? 
+                            document.getElementById('backBraceAuthNumber').value || null : null
+                    },
+                    leftKneeBrace: {
+                        given: document.getElementById('leftKneeBraceGiven').checked,
+                        date: document.getElementById('leftKneeBraceDate').value || null,
+                        paymentStatus: document.getElementById('leftKneeBraceGiven').checked ? 
+                            document.querySelector('input[name="leftKneeBracePayment"]:checked').value : null,
+                        returned: document.getElementById('leftKneeBraceGiven').checked ? 
+                            document.getElementById('leftKneeBraceReturned').checked : false,
+                        authDone: document.getElementById('leftKneeBraceAuthDone').checked,
+                        authDate: document.getElementById('leftKneeBraceAuthDone').checked ? 
+                            document.getElementById('leftKneeBraceAuthDate').value || null : null,
+                        authNumber: document.getElementById('leftKneeBraceAuthDone').checked ? 
+                            document.getElementById('leftKneeBraceAuthNumber').value || null : null
+                    },
+                    rightKneeBrace: {
+                        given: document.getElementById('rightKneeBraceGiven').checked,
+                        date: document.getElementById('rightKneeBraceDate').value || null,
+                        paymentStatus: document.getElementById('rightKneeBraceGiven').checked ? 
+                            document.querySelector('input[name="rightKneeBracePayment"]:checked').value : null,
+                        returned: document.getElementById('rightKneeBraceGiven').checked ? 
+                            document.getElementById('rightKneeBraceReturned').checked : false,
+                        authDone: document.getElementById('rightKneeBraceAuthDone').checked,
+                        authDate: document.getElementById('rightKneeBraceAuthDone').checked ? 
+                            document.getElementById('rightKneeBraceAuthDate').value || null : null,
+                        authNumber: document.getElementById('rightKneeBraceAuthDone').checked ? 
+                            document.getElementById('rightKneeBraceAuthNumber').value || null : null
+                    },
+                    leftCarpalSplint: {
+                        given: document.getElementById('leftCarpalSplintGiven').checked,
+                        date: document.getElementById('leftCarpalSplintDate').value || null,
+                        paymentStatus: document.getElementById('leftCarpalSplintGiven').checked ? 
+                            document.querySelector('input[name="leftCarpalSplintPayment"]:checked').value : null,
+                        returned: document.getElementById('leftCarpalSplintGiven').checked ? 
+                            document.getElementById('leftCarpalSplintReturned').checked : false,
+                        authDone: document.getElementById('leftCarpalSplintAuthDone').checked,
+                        authDate: document.getElementById('leftCarpalSplintAuthDone').checked ? 
+                            document.getElementById('leftCarpalSplintAuthDate').value || null : null,
+                        authNumber: document.getElementById('leftCarpalSplintAuthDone').checked ? 
+                            document.getElementById('leftCarpalSplintAuthNumber').value || null : null
+                    },
+                    rightCarpalSplint: {
+                        given: document.getElementById('rightCarpalSplintGiven').checked,
+                        date: document.getElementById('rightCarpalSplintDate').value || null,
+                        paymentStatus: document.getElementById('rightCarpalSplintGiven').checked ? 
+                            document.querySelector('input[name="rightCarpalSplintPayment"]:checked').value : null,
+                        returned: document.getElementById('rightCarpalSplintGiven').checked ? 
+                            document.getElementById('rightCarpalSplintReturned').checked : false,
+                        authDone: document.getElementById('rightCarpalSplintAuthDone').checked,
+                        authDate: document.getElementById('rightCarpalSplintAuthDone').checked ? 
+                            document.getElementById('rightCarpalSplintAuthDate').value || null : null,
+                        authNumber: document.getElementById('rightCarpalSplintAuthDone').checked ? 
+                            document.getElementById('rightCarpalSplintAuthNumber').value || null : null
+                    },
+                    leftDorsiflexionSplint: {
+                        given: document.getElementById('leftDorsiflexionSplintGiven').checked,
+                        date: document.getElementById('leftDorsiflexionSplintDate').value || null,
+                        paymentStatus: document.getElementById('leftDorsiflexionSplintGiven').checked ? 
+                            document.querySelector('input[name="leftDorsiflexionSplintPayment"]:checked').value : null,
+                        returned: document.getElementById('leftDorsiflexionSplintGiven').checked ? 
+                            document.getElementById('leftDorsiflexionSplintReturned').checked : false,
+                        authDone: document.getElementById('leftDorsiflexionSplintAuthDone').checked,
+                        authDate: document.getElementById('leftDorsiflexionSplintAuthDone').checked ? 
+                            document.getElementById('leftDorsiflexionSplintAuthDate').value || null : null,
+                        authNumber: document.getElementById('leftDorsiflexionSplintAuthDone').checked ? 
+                            document.getElementById('leftDorsiflexionSplintAuthNumber').value || null : null
+                    },
+                    rightDorsiflexionSplint: {
+                        given: document.getElementById('rightDorsiflexionSplintGiven').checked,
+                        date: document.getElementById('rightDorsiflexionSplintDate').value || null,
+                        paymentStatus: document.getElementById('rightDorsiflexionSplintGiven').checked ? 
+                            document.querySelector('input[name="rightDorsiflexionSplintPayment"]:checked').value : null,
+                        returned: document.getElementById('rightDorsiflexionSplintGiven').checked ? 
+                            document.getElementById('rightDorsiflexionSplintReturned').checked : false,
+                        authDone: document.getElementById('rightDorsiflexionSplintAuthDone').checked,
+                        authDate: document.getElementById('rightDorsiflexionSplintAuthDone').checked ? 
+                            document.getElementById('rightDorsiflexionSplintAuthDate').value || null : null,
+                        authNumber: document.getElementById('rightDorsiflexionSplintAuthDone').checked ? 
+                            document.getElementById('rightDorsiflexionSplintAuthNumber').value || null : null
+                    },
+                    diabeticShoes: {
+                        given: document.getElementById('diabeticShoesGiven').checked,
+                        date: document.getElementById('diabeticShoesDate').value || null,
+                        paymentStatus: document.getElementById('diabeticShoesGiven').checked ? 
+                            document.querySelector('input[name="diabeticShoesPayment"]:checked').value : null,
+                        returned: document.getElementById('diabeticShoesGiven').checked ? 
+                            document.getElementById('diabeticShoesReturned').checked : false,
+                        authDone: document.getElementById('diabeticShoesAuthDone').checked,
+                        authDate: document.getElementById('diabeticShoesAuthDone').checked ? 
+                            document.getElementById('diabeticShoesAuthDate').value || null : null,
+                        authNumber: document.getElementById('diabeticShoesAuthDone').checked ? 
+                            document.getElementById('diabeticShoesAuthNumber').value || null : null
+                    },
+                    tensUnit: {
+                        given: document.getElementById('tensUnitGiven').checked,
+                        date: document.getElementById('tensUnitDate').value || null,
+                        paymentStatus: document.getElementById('tensUnitGiven').checked ? 
+                            document.querySelector('input[name="tensUnitPayment"]:checked').value : null,
+                        returned: document.getElementById('tensUnitGiven').checked ? 
+                            document.getElementById('tensUnitReturned').checked : false,
+                        authDone: document.getElementById('tensUnitAuthDone').checked,
+                        authDate: document.getElementById('tensUnitAuthDone').checked ? 
+                            document.getElementById('tensUnitAuthDate').value || null : null,
+                        authNumber: document.getElementById('tensUnitAuthDone').checked ? 
+                            document.getElementById('tensUnitAuthNumber').value || null : null
+                    }
+                }
+            };
+
+            clients.push(client);
+            
+            // Increment chart number counter and save it
+            chartNumberCounter++;
+            await saveData();
+            
+            // Reset form
+            this.reset();
+            document.querySelectorAll('input[type="date"]').forEach(input => input.disabled = true);
+            document.querySelectorAll('[id$="PaymentSection"]').forEach(section => section.classList.add('hidden'));
+            document.querySelectorAll('[id$="ReturnSection"]').forEach(section => section.classList.add('hidden'));
+            document.querySelectorAll('input[value="unpaid"]').forEach(radio => radio.checked = true);
+            
+            alert('Client added successfully!');
+        });
+
+        // Edit form submission
+        document.getElementById('editClientForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const clientId = document.getElementById('editClientId').value;
+            
+            // Get selected diagnoses
+            const diagnoses = Array.from(document.querySelectorAll('.edit-diagnosis-checkbox:checked'))
+                .map(checkbox => checkbox.value);
+
+            if (diagnoses.length === 0) {
+                alert('Please select at least one diagnosis.');
+                return;
+            }
+
+            const updatedClient = {
+                id: clientId,
+                diagnoses: diagnoses,
+                insurance: document.getElementById('editInsurance').value,
+                equipment: {
+                    backBrace: {
+                        given: document.getElementById('editBackBraceGiven').checked,
+                        date: document.getElementById('editBackBraceDate').value || null,
+                        paymentStatus: document.getElementById('editBackBraceGiven').checked ? 
+                            document.querySelector('input[name="editBackBracePayment"]:checked').value : null,
+                        returned: document.getElementById('editBackBraceGiven').checked ? 
+                            document.getElementById('editBackBraceReturned').checked : false,
+                        authDone: document.getElementById('editBackBraceAuthDone').checked,
+                        authDate: document.getElementById('editBackBraceAuthDate').value || null,
+                        authNumber: document.getElementById('editBackBraceAuthNumber').value || null
+                    },
+                    leftKneeBrace: {
+                        given: document.getElementById('editLeftKneeBraceGiven').checked,
+                        date: document.getElementById('editLeftKneeBraceDate').value || null,
+                        paymentStatus: document.getElementById('editLeftKneeBraceGiven').checked ? 
+                            document.querySelector('input[name="editLeftKneeBracePayment"]:checked').value : null,
+                        returned: document.getElementById('editLeftKneeBraceGiven').checked ? 
+                            document.getElementById('editLeftKneeBraceReturned').checked : false,
+                        authDone: document.getElementById('editLeftKneeBraceAuthDone').checked,
+                        authDate: document.getElementById('editLeftKneeBraceAuthDate').value || null,
+                        authNumber: document.getElementById('editLeftKneeBraceAuthNumber').value || null
+                    },
+                    rightKneeBrace: {
+                        given: document.getElementById('editRightKneeBraceGiven').checked,
+                        date: document.getElementById('editRightKneeBraceDate').value || null,
+                        paymentStatus: document.getElementById('editRightKneeBraceGiven').checked ? 
+                            document.querySelector('input[name="editRightKneeBracePayment"]:checked').value : null,
+                        returned: document.getElementById('editRightKneeBraceGiven').checked ? 
+                            document.getElementById('editRightKneeBraceReturned').checked : false,
+                        authDone: document.getElementById('editRightKneeBraceAuthDone').checked,
+                        authDate: document.getElementById('editRightKneeBraceAuthDate').value || null,
+                        authNumber: document.getElementById('editRightKneeBraceAuthNumber').value || null
+                    },
+                    leftCarpalSplint: {
+                        given: document.getElementById('editLeftCarpalSplintGiven').checked,
+                        date: document.getElementById('editLeftCarpalSplintDate').value || null,
+                        paymentStatus: document.getElementById('editLeftCarpalSplintGiven').checked ? 
+                            document.querySelector('input[name="editLeftCarpalSplintPayment"]:checked').value : null,
+                        returned: document.getElementById('editLeftCarpalSplintGiven').checked ? 
+                            document.getElementById('editLeftCarpalSplintReturned').checked : false,
+                        authDone: document.getElementById('editLeftCarpalSplintAuthDone').checked,
+                        authDate: document.getElementById('editLeftCarpalSplintAuthDate').value || null,
+                        authNumber: document.getElementById('editLeftCarpalSplintAuthNumber').value || null
+                    },
+                    rightCarpalSplint: {
+                        given: document.getElementById('editRightCarpalSplintGiven').checked,
+                        date: document.getElementById('editRightCarpalSplintDate').value || null,
+                        paymentStatus: document.getElementById('editRightCarpalSplintGiven').checked ? 
+                            document.querySelector('input[name="editRightCarpalSplintPayment"]:checked').value : null,
+                        returned: document.getElementById('editRightCarpalSplintGiven').checked ? 
+                            document.getElementById('editRightCarpalSplintReturned').checked : false,
+                        authDone: document.getElementById('editRightCarpalSplintAuthDone').checked,
+                        authDate: document.getElementById('editRightCarpalSplintAuthDate').value || null,
+                        authNumber: document.getElementById('editRightCarpalSplintAuthNumber').value || null
+                    },
+                    leftDorsiflexionSplint: {
+                        given: document.getElementById('editLeftDorsiflexionSplintGiven').checked,
+                        date: document.getElementById('editLeftDorsiflexionSplintDate').value || null,
+                        paymentStatus: document.getElementById('editLeftDorsiflexionSplintGiven').checked ? 
+                            document.querySelector('input[name="editLeftDorsiflexionSplintPayment"]:checked').value : null,
+                        returned: document.getElementById('editLeftDorsiflexionSplintGiven').checked ? 
+                            document.getElementById('editLeftDorsiflexionSplintReturned').checked : false,
+                        authDone: document.getElementById('editLeftDorsiflexionSplintAuthDone').checked,
+                        authDate: document.getElementById('editLeftDorsiflexionSplintAuthDate').value || null,
+                        authNumber: document.getElementById('editLeftDorsiflexionSplintAuthNumber').value || null
+                    },
+                    rightDorsiflexionSplint: {
+                        given: document.getElementById('editRightDorsiflexionSplintGiven').checked,
+                        date: document.getElementById('editRightDorsiflexionSplintDate').value || null,
+                        paymentStatus: document.getElementById('editRightDorsiflexionSplintGiven').checked ? 
+                            document.querySelector('input[name="editRightDorsiflexionSplintPayment"]:checked').value : null,
+                        returned: document.getElementById('editRightDorsiflexionSplintGiven').checked ? 
+                            document.getElementById('editRightDorsiflexionSplintReturned').checked : false,
+                        authDone: document.getElementById('editRightDorsiflexionSplintAuthDone').checked,
+                        authDate: document.getElementById('editRightDorsiflexionSplintAuthDate').value || null,
+                        authNumber: document.getElementById('editRightDorsiflexionSplintAuthNumber').value || null
+                    },
+                    diabeticShoes: {
+                        given: document.getElementById('editDiabeticShoesGiven').checked,
+                        date: document.getElementById('editDiabeticShoesDate').value || null,
+                        paymentStatus: document.getElementById('editDiabeticShoesGiven').checked ? 
+                            document.querySelector('input[name="editDiabeticShoesPayment"]:checked').value : null,
+                        returned: document.getElementById('editDiabeticShoesGiven').checked ? 
+                            document.getElementById('editDiabeticShoesReturned').checked : false,
+                        authDone: document.getElementById('editDiabeticShoesAuthDone').checked,
+                        authDate: document.getElementById('editDiabeticShoesAuthDate').value || null,
+                        authNumber: document.getElementById('editDiabeticShoesAuthNumber').value || null
+                    },
+                    tensUnit: {
+                        given: document.getElementById('editTensUnitGiven').checked,
+                        date: document.getElementById('editTensUnitDate').value || null,
+                        paymentStatus: document.getElementById('editTensUnitGiven').checked ? 
+                            document.querySelector('input[name="editTensUnitPayment"]:checked').value : null,
+                        returned: document.getElementById('editTensUnitGiven').checked ? 
+                            document.getElementById('editTensUnitReturned').checked : false,
+                        authDone: document.getElementById('editTensUnitAuthDone').checked,
+                        authDate: document.getElementById('editTensUnitAuthDate').value || null,
+                        authNumber: document.getElementById('editTensUnitAuthNumber').value || null
+                    }
+                }
+            };
+
+            // Update the client in the array
+            const clientIndex = clients.findIndex(client => client.id === clientId);
+            if (clientIndex !== -1) {
+                // Preserve the original chart number
+                updatedClient.chartNumber = clients[clientIndex].chartNumber;
+                clients[clientIndex] = updatedClient;
+                await saveData();
+                
+                alert('Client updated successfully!');
+                cancelEdit(); // Return to client list
+                displayClients(); // Refresh the display
+            }
+        });
+
+        function editClient(clientId) {
+            const client = clients.find(c => c.id === clientId);
+            if (!client) return;
+
+            // Populate the edit form with client data
+            document.getElementById('editClientId').value = client.id;
+            document.getElementById('editInsurance').value = client.insurance;
+
+            // Clear and set diagnoses
+            document.querySelectorAll('.edit-diagnosis-checkbox').forEach(checkbox => {
+                checkbox.checked = client.diagnoses.includes(checkbox.value);
+            });
+
+            // Populate equipment data
+            const equipmentTypes = ['backBrace', 'leftKneeBrace', 'rightKneeBrace', 'leftCarpalSplint', 'rightCarpalSplint', 'leftDorsiflexionSplint', 'rightDorsiflexionSplint', 'diabeticShoes', 'tensUnit'];
+            
+            equipmentTypes.forEach(type => {
+                const equipment = client.equipment[type] || { given: false, date: null, paymentStatus: null, returned: false, authDone: false, authDate: null, authNumber: null };
+                const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+                
+                // Set checkbox
+                document.getElementById(`edit${capitalizedType}Given`).checked = equipment.given;
+                
+                // Set date
+                document.getElementById(`edit${capitalizedType}Date`).value = equipment.date || '';
+                document.getElementById(`edit${capitalizedType}Date`).disabled = !equipment.given;
+                
+                // Set payment status
+                if (equipment.given && equipment.paymentStatus) {
+                    document.querySelector(`input[name="edit${capitalizedType}Payment"][value="${equipment.paymentStatus}"]`).checked = true;
+                    document.getElementById(`edit${capitalizedType}PaymentSection`).classList.remove('hidden');
+                } else {
+                    document.getElementById(`edit${capitalizedType}PaymentSection`).classList.add('hidden');
+                }
+                
+                // Set return status
+                if (equipment.given) {
+                    document.getElementById(`edit${capitalizedType}Returned`).checked = equipment.returned || false;
+                    document.getElementById(`edit${capitalizedType}ReturnSection`).classList.remove('hidden');
+                } else {
+                    document.getElementById(`edit${capitalizedType}ReturnSection`).classList.add('hidden');
+                }
+                
+                // Set authorization data (for edit form)
+                const editAuthDoneElement = document.getElementById(`edit${capitalizedType}AuthDone`);
+                const editAuthSectionElement = document.getElementById(`edit${capitalizedType}AuthSection`);
+                const editAuthDateElement = document.getElementById(`edit${capitalizedType}AuthDate`);
+                const editAuthNumberElement = document.getElementById(`edit${capitalizedType}AuthNumber`);
+                
+                if (editAuthDoneElement && editAuthSectionElement) {
+                    editAuthDoneElement.checked = equipment.authDone || false;
+                    editAuthSectionElement.classList.toggle('hidden', !equipment.authDone);
+                    
+                    if (editAuthDateElement) editAuthDateElement.value = equipment.authDate || '';
+                    if (editAuthNumberElement) editAuthNumberElement.value = equipment.authNumber || '';
+                }
+            });
+
+            // Show edit section and hide others
+            document.getElementById('addClientSection').classList.add('hidden');
+            document.getElementById('clientListSection').classList.add('hidden');
+            document.getElementById('eligibilitySection').classList.add('hidden');
+            document.getElementById('editClientSection').classList.remove('hidden');
+        }
+
+        function cancelEdit() {
+            // Hide edit section and show client list
+            document.getElementById('editClientSection').classList.add('hidden');
+            document.getElementById('clientListSection').classList.remove('hidden');
+            
+            // Update tab styling
+            document.querySelectorAll('button[id$="Tab"]').forEach(btn => {
+                btn.className = 'px-6 py-2 rounded-md font-medium transition-all text-gray-600 hover:text-indigo-600';
+            });
+            document.getElementById('clientListTab').className = 'px-6 py-2 rounded-md font-medium transition-all bg-indigo-600 text-white';
+        }
+
+        function displayClients() {
+            const clientList = document.getElementById('clientList');
+            
+            if (clients.length === 0) {
+                clientList.innerHTML = '<p class="text-gray-500 text-center py-8">No clients in database</p>';
+                return;
+            }
+
+            clientList.innerHTML = clients.map((client) => {
+                const getEquipmentStatus = (equipment) => {
+                    if (!equipment.given) return '';
+                    let statusText = equipment.date;
+                    if (equipment.paymentStatus) {
+                        const paymentClass = equipment.paymentStatus === 'paid' ? 'text-green-600' : 
+                                           equipment.paymentStatus === 'written-off' ? 'text-blue-600' : 'text-red-600';
+                        statusText += ` (<span class="${paymentClass}">${equipment.paymentStatus.replace('-', ' ')}</span>)`;
+                    }
+                    if (equipment.returned) {
+                        statusText += ' <span class="text-purple-600">(returned)</span>';
+                    }
+                    return statusText;
+                };
+
+                return `
+                <div class="border border-gray-200 rounded-lg p-4 fade-in">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <div class="flex items-center gap-3 mb-1">
+                                <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-mono font-semibold">#${client.chartNumber}</span>
+                                <h3 class="text-lg font-semibold text-gray-800">Client ID: ${client.id}</h3>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editClient('${client.id}')" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors">
+                                Edit
+                            </button>
+                            <button onclick="deleteClient('${client.id}')" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p><strong>Diagnoses:</strong> ${client.diagnoses.join(', ')}</p>
+                            <p><strong>Insurance:</strong> ${client.insurance}</p>
+                        </div>
+                        <div>
+                            <p><strong>Equipment History:</strong></p>
+                            <ul class="ml-4 mt-1 space-y-1">
+                                ${client.equipment.backBrace.given ? `<li>Back Brace: ${getEquipmentStatus(client.equipment.backBrace)}</li>` : ''}
+                                ${client.equipment.leftKneeBrace.given ? `<li>Left Knee Brace: ${getEquipmentStatus(client.equipment.leftKneeBrace)}</li>` : ''}
+                                ${client.equipment.rightKneeBrace.given ? `<li>Right Knee Brace: ${getEquipmentStatus(client.equipment.rightKneeBrace)}</li>` : ''}
+                                ${client.equipment.leftCarpalSplint.given ? `<li>Left Carpal Splint: ${getEquipmentStatus(client.equipment.leftCarpalSplint)}</li>` : ''}
+                                ${client.equipment.rightCarpalSplint.given ? `<li>Right Carpal Splint: ${getEquipmentStatus(client.equipment.rightCarpalSplint)}</li>` : ''}
+                                ${client.equipment.leftDorsiflexionSplint && client.equipment.leftDorsiflexionSplint.given ? `<li>Left Dorsiflexion Splint: ${getEquipmentStatus(client.equipment.leftDorsiflexionSplint)}</li>` : ''}
+                                ${client.equipment.rightDorsiflexionSplint && client.equipment.rightDorsiflexionSplint.given ? `<li>Right Dorsiflexion Splint: ${getEquipmentStatus(client.equipment.rightDorsiflexionSplint)}</li>` : ''}
+                                ${client.equipment.diabeticShoes && client.equipment.diabeticShoes.given ? `<li>Diabetic Shoes: ${getEquipmentStatus(client.equipment.diabeticShoes)}</li>` : ''}
+                                ${client.equipment.tensUnit && client.equipment.tensUnit.given ? `<li>TENS Unit: ${getEquipmentStatus(client.equipment.tensUnit)}</li>` : ''}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        async function deleteClient(clientId) {
+            if (confirm('Are you sure you want to delete this client?')) {
+                clients = clients.filter(client => client.id !== clientId);
+                await saveData();
+                displayClients();
+            }
+        }
+
+        function generateEligibilityReport(equipmentType, authorizationStatus) {
+            const eligibleInsurances = ['Humana', 'Medicare', 'Cigna', 'Viva Health', 'BCBS', 'United Healthcare', 'Aetna'];
+            const currentDate = new Date();
+            
+            let eligibleClients = [];
+            
+            clients.forEach(client => {
+                // Check insurance eligibility
+                if (!eligibleInsurances.includes(client.insurance)) return;
+                
+                let isEligible = false;
+                
+                switch (equipmentType) {
+                    case 'backBrace':
+                        // Back Brace: 5 year replacement cycle
+                        if (client.diagnoses.includes('Low Back Pain')) {
+                            if (!client.equipment.backBrace.given) {
+                                isEligible = true;
+                            } else if (client.equipment.backBrace.date) {
+                                const equipmentDate = new Date(client.equipment.backBrace.date);
+                                const yearsDiff = (currentDate - equipmentDate) / (1000 * 60 * 60 * 24 * 365);
+                                if (yearsDiff >= 5) isEligible = true;
+                            }
+                        }
+                        break;
+                        
+                    case 'leftKneeBrace':
+                    case 'rightKneeBrace':
+                        // Knee Braces: 3 year replacement cycle
+                        if (client.diagnoses.includes('Knee Pain')) {
+                            const equipmentKey = equipmentType;
+                            if (!client.equipment[equipmentKey].given) {
+                                isEligible = true;
+                            } else if (client.equipment[equipmentKey].date) {
+                                const equipmentDate = new Date(client.equipment[equipmentKey].date);
+                                const yearsDiff = (currentDate - equipmentDate) / (1000 * 60 * 60 * 24 * 365);
+                                if (yearsDiff >= 3) isEligible = true;
+                            }
+                        }
+                        break;
+                        
+                    case 'leftCarpalSplint':
+                    case 'rightCarpalSplint':
+                        // Carpal Tunnel Splints: 5 year replacement cycle
+                        if (client.diagnoses.includes('Carpal Tunnel Syndrome')) {
+                            const equipmentKey = equipmentType;
+                            if (!client.equipment[equipmentKey].given) {
+                                isEligible = true;
+                            } else if (client.equipment[equipmentKey].date) {
+                                const equipmentDate = new Date(client.equipment[equipmentKey].date);
+                                const yearsDiff = (currentDate - equipmentDate) / (1000 * 60 * 60 * 24 * 365);
+                                if (yearsDiff >= 5) isEligible = true;
+                            }
+                        }
+                        break;
+                        
+                    case 'leftDorsiflexionSplint':
+                    case 'rightDorsiflexionSplint':
+                        // Dorsiflexion Splints: 5 year replacement cycle
+                        if (client.diagnoses.includes('Heel pain/Heel spur/Plantar Fasciitis')) {
+                            const equipmentKey = equipmentType;
+                            const equipment = client.equipment[equipmentKey] || { given: false, date: null };
+                            if (!equipment.given) {
+                                isEligible = true;
+                            } else if (equipment.date) {
+                                const equipmentDate = new Date(equipment.date);
+                                const yearsDiff = (currentDate - equipmentDate) / (1000 * 60 * 60 * 24 * 365);
+                                if (yearsDiff >= 5) isEligible = true;
+                            }
+                        }
+                        break;
+                        
+                    case 'diabeticShoes':
+                        // Diabetic Shoes: 1 year replacement cycle
+                        if (client.diagnoses.includes('Diabetes Mellitus')) {
+                            const equipment = client.equipment.diabeticShoes || { given: false, date: null };
+                            if (!equipment.given) {
+                                isEligible = true;
+                            } else if (equipment.date) {
+                                const equipmentDate = new Date(equipment.date);
+                                const yearsDiff = (currentDate - equipmentDate) / (1000 * 60 * 60 * 24 * 365);
+                                if (yearsDiff >= 1) isEligible = true;
+                            }
+                        }
+                        break;
+                        
+                    case 'tensUnit':
+                        // TENS Unit: 5 year replacement cycle, ALL clients with Insurance 1-7 eligible
+                        const equipment = client.equipment.tensUnit || { given: false, date: null };
+                        if (!equipment.given) {
+                            isEligible = true;
+                        } else if (equipment.date) {
+                            const equipmentDate = new Date(equipment.date);
+                            const yearsDiff = (currentDate - equipmentDate) / (1000 * 60 * 60 * 24 * 365);
+                            if (yearsDiff >= 5) isEligible = true;
+                        }
+                        break;
+                }
+                
+                if (isEligible) {
+                    // Check authorization status for eligible clients
+                    let equipment;
+                    if (equipmentType === 'diabeticShoes' || equipmentType === 'tensUnit') {
+                        equipment = client.equipment[equipmentType] || { given: false, date: null, authDone: false };
+                    } else {
+                        equipment = client.equipment[equipmentType] || { given: false, date: null, authDone: false };
+                    }
+                    
+                    // Check if this is a replacement scenario (equipment was given and is now due for replacement)
+                    let isReplacementScenario = false;
+                    if (equipment.given && equipment.date) {
+                        const equipmentDate = new Date(equipment.date);
+                        const yearsDiff = (currentDate - equipmentDate) / (1000 * 60 * 60 * 24 * 365);
+                        
+                        // Check replacement timing based on equipment type
+                        let replacementYears;
+                        switch (equipmentType) {
+                            case 'diabeticShoes':
+                                replacementYears = 1;
+                                break;
+                            case 'leftKneeBrace':
+                            case 'rightKneeBrace':
+                                replacementYears = 3;
+                                break;
+                            case 'backBrace':
+                            case 'leftCarpalSplint':
+                            case 'rightCarpalSplint':
+                            case 'leftDorsiflexionSplint':
+                            case 'rightDorsiflexionSplint':
+                            case 'tensUnit':
+                                replacementYears = 5;
+                                break;
+                        }
+                        
+                        if (yearsDiff >= replacementYears) {
+                            isReplacementScenario = true;
+                        }
+                    }
+                    
+                    // Determine authorization status
+                    let isAuthorized;
+                    if (isReplacementScenario) {
+                        // If equipment is due for replacement, it's automatically unauthorized (needs new auth)
+                        isAuthorized = false;
+                    } else {
+                        // For first-time eligibility, check current authorization status
+                        isAuthorized = equipment.authDone || false;
+                    }
+                    
+                    // Filter based on requested authorization status
+                    if ((authorizationStatus === 'unauthorized' && !isAuthorized) || 
+                        (authorizationStatus === 'authorized' && isAuthorized)) {
+                        eligibleClients.push(client);
+                    }
+                }
+            });
+            
+            displayEligibilityResults(equipmentType, eligibleClients, authorizationStatus);
+        }
+
+        function generateUnpaidReport(equipmentType) {
+            let unpaidClients = [];
+            
+            clients.forEach(client => {
+                const equipment = client.equipment[equipmentType] || { given: false, paymentStatus: null, returned: false };
+                if (equipment.given && equipment.paymentStatus === 'unpaid') {
+                    unpaidClients.push(client);
+                }
+            });
+            
+            displayPaymentResults(equipmentType, unpaidClients, 'unpaid');
+        }
+
+        function generateUnpaidUnreturnedReport(equipmentType) {
+            let outstandingClients = [];
+            
+            clients.forEach(client => {
+                const equipment = client.equipment[equipmentType] || { given: false, paymentStatus: null, returned: false };
+                if (equipment.given && equipment.paymentStatus === 'unpaid' && !equipment.returned) {
+                    outstandingClients.push(client);
+                }
+            });
+            
+            displayPaymentResults(equipmentType, outstandingClients, 'outstanding');
+        }
+
+        function displayPaymentResults(equipmentType, resultClients, reportType) {
+            const resultsDiv = document.getElementById('eligibilityResults');
+            
+            const equipmentNames = {
+                'backBrace': 'Back Brace',
+                'leftKneeBrace': 'Left Knee Brace',
+                'rightKneeBrace': 'Right Knee Brace',
+                'leftCarpalSplint': 'Left Carpal Tunnel Splint',
+                'rightCarpalSplint': 'Right Carpal Tunnel Splint',
+                'leftDorsiflexionSplint': 'Left Dorsiflexion Splint',
+                'rightDorsiflexionSplint': 'Right Dorsiflexion Splint',
+                'diabeticShoes': 'Diabetic Shoes',
+                'tensUnit': 'TENS Unit'
+            };
+            
+            const equipmentName = equipmentNames[equipmentType];
+            const reportTitle = reportType === 'unpaid' ? 'Unpaid' : 'Outstanding (Unpaid & Not Returned)';
+            const reportColor = reportType === 'unpaid' ? 'yellow' : 'red';
+            
+            if (resultClients.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="bg-${reportColor}-50 border border-${reportColor}-200 rounded-lg p-6 fade-in">
+                        <h3 class="text-lg font-semibold text-${reportColor}-800 mb-2">${reportTitle} ${equipmentName} Report</h3>
+                        <p class="text-${reportColor}-700">No ${reportType} ${equipmentName.toLowerCase()} found.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            resultsDiv.innerHTML = `
+                <div class="bg-${reportColor}-50 border border-${reportColor}-200 rounded-lg p-6 fade-in">
+                    <h3 class="text-lg font-semibold text-${reportColor}-800 mb-4">${reportTitle} ${equipmentName} Report</h3>
+                    <p class="text-${reportColor}-700 mb-4">${resultClients.length} ${reportType} ${equipmentName.toLowerCase()}(s) found:</p>
+                    <div class="space-y-3">
+                        ${resultClients.map(client => {
+                            const equipment = client.equipment[equipmentType];
+                            return `
+                            <div class="bg-white border border-${reportColor}-200 rounded-lg p-4">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-mono font-semibold">#${client.chartNumber}</span>
+                                            <p class="font-semibold text-gray-800">Client ID: ${client.id}</p>
+                                        </div>
+                                        <p class="text-sm text-gray-600">Insurance: ${client.insurance}</p>
+                                        <p class="text-sm text-gray-600">Date Given: ${equipment.date}</p>
+                                        <p class="text-sm text-gray-600">Payment Status: <span class="text-red-600 font-medium">${equipment.paymentStatus}</span></p>
+                                        <p class="text-sm text-gray-600">Returned: <span class="font-medium ${equipment.returned ? 'text-green-600' : 'text-red-600'}">${equipment.returned ? 'Yes' : 'No'}</span></p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="bg-${reportColor}-100 text-${reportColor}-800 px-2 py-1 rounded-full text-xs font-medium">${reportType.charAt(0).toUpperCase() + reportType.slice(1)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayEligibilityResults(equipmentType, eligibleClients, authorizationStatus) {
+            const resultsDiv = document.getElementById('eligibilityResults');
+            
+            const equipmentNames = {
+                'backBrace': 'Back Brace',
+                'leftKneeBrace': 'Left Knee Brace',
+                'rightKneeBrace': 'Right Knee Brace',
+                'leftCarpalSplint': 'Left Carpal Tunnel Splint',
+                'rightCarpalSplint': 'Right Carpal Tunnel Splint',
+                'leftDorsiflexionSplint': 'Left Dorsiflexion Splint',
+                'rightDorsiflexionSplint': 'Right Dorsiflexion Splint',
+                'diabeticShoes': 'Diabetic Shoes',
+                'tensUnit': 'TENS Unit'
+            };
+            
+            const equipmentName = equipmentNames[equipmentType];
+            const authStatusText = authorizationStatus === 'authorized' ? 'Authorized' : 'Unauthorized';
+            const reportTitle = `${equipmentName} - Eligible ${authStatusText}`;
+            
+            if (eligibleClients.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 fade-in">
+                        <h3 class="text-lg font-semibold text-yellow-800 mb-2">${reportTitle} Report</h3>
+                        <p class="text-yellow-700">No clients are currently eligible ${authStatusText.toLowerCase()} for ${equipmentName.toLowerCase()}.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const statusColor = authorizationStatus === 'authorized' ? 'green' : 'blue';
+            const statusBgColor = authorizationStatus === 'authorized' ? 'bg-green-50' : 'bg-blue-50';
+            const statusBorderColor = authorizationStatus === 'authorized' ? 'border-green-200' : 'border-blue-200';
+            
+            resultsDiv.innerHTML = `
+                <div class="${statusBgColor} ${statusBorderColor} rounded-lg p-6 fade-in">
+                    <h3 class="text-lg font-semibold text-${statusColor}-800 mb-4">${reportTitle} Report</h3>
+                    <p class="text-${statusColor}-700 mb-4">${eligibleClients.length} client(s) eligible ${authStatusText.toLowerCase()} for ${equipmentName.toLowerCase()}:</p>
+                    <div class="space-y-3">
+                        ${eligibleClients.map(client => {
+                            const equipment = client.equipment[equipmentType] || { authDone: false, authDate: null, authNumber: null };
+                            return `
+                            <div class="bg-white ${statusBorderColor} rounded-lg p-4">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-mono font-semibold">#${client.chartNumber}</span>
+                                            <p class="font-semibold text-gray-800">Client ID: ${client.id}</p>
+                                        </div>
+                                        <p class="text-sm text-gray-600">Insurance: ${client.insurance}</p>
+                                        <p class="text-sm text-gray-600">Diagnoses: ${client.diagnoses.join(', ')}</p>
+                                        ${equipment.authDone ? `
+                                            <p class="text-sm text-gray-600">Auth Date: ${equipment.authDate || 'Not specified'}</p>
+                                            <p class="text-sm text-gray-600">Auth Number: ${equipment.authNumber || 'Not specified'}</p>
+                                        ` : ''}
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="bg-${statusColor}-100 text-${statusColor}-800 px-2 py-1 rounded-full text-xs font-medium">
+                                            ${authStatusText}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>`
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+    
+    <!-- Hidden file input for import -->
+    <input type="file" id="importFile" accept=".json" style="display: none;">
+</body>
+</html>
